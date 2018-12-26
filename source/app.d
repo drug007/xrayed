@@ -66,7 +66,7 @@ int entry_point(string[] args)
 
 	import std.typecons : scoped;
 	import xrayed.xrcore : XrCore;
-    auto core = scoped!XrCore("OpenXRay", /*commandLine*/"");
+    auto core = scoped!XrCore("OpenXRay", args, fsltx);
 	// scope (exit) 
 	//	Core._destroy();
 
