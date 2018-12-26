@@ -7,21 +7,39 @@ import xrayed.xrdebug.xrdebug : XrDebug;
 
 XrDebug xrDebug;
 
-int entry_point(pcstr commandLine)
+int entry_point(string[] args)
 {
-    if (strstr(commandLine, "-nosplash") == null)
+	import std.getopt;
+
+	bool nosplash;
+	bool splashnotop;
+	bool dedicated;
+	string fsltx;
+
+	auto helpInformation = getopt(
+		args,
+		"nosplash",    &nosplash,
+		"splashnotop", &splashnotop,
+		"dedicated",   &GEnv.isDedicatedServer,
+		std.getopt.config.required,
+		"fsltx",       &fsltx
+	);
+
+	if (helpInformation.helpWanted)
+	{
+		defaultGetoptPrinter("Usage:", helpInformation.options);
+	}
+	
+    if (!nosplash)
     {
 		debug {
         	bool topmost = false;
 		} else {
-        	const bool topmost = strstr(commandLine, "-splashnotop") == null ? true : false;
+        	bool topmost = !splashnotop;
 		}
 
         Splash.show(topmost);
-    }
-
-    if (strstr(commandLine, "-dedicated"))
-        GEnv.isDedicatedServer = true;
+	}
 
     xrDebug.Initialize();
 	version(windows)
@@ -31,15 +49,24 @@ int entry_point(pcstr commandLine)
 			filter.initialize();
 	}
 
-	enum fsltx = "-fsltx \0";
-	static assert(fsltx.length == 8);
-    string_path fsgame = "";
-    if (strstr(commandLine, fsltx.ptr))
-    {
-		import core.stdc.stdio : sscanf;
-        sscanf(strstr(commandLine, fsltx) + fsltx.length, "%[^ ] ", fsgame.ptr);
-    }
-    // Core.Initialize("OpenXRay", commandLine, null, true, *fsgame ? fsgame : null);
+	if (fsltx.length == 0)
+	{
+		defaultGetoptPrinter("Usage:", helpInformation.options);
+		return 1;
+	}
+
+	import std.path : isValidPath;
+	import std.file : exists;
+	if (!fsltx.isValidPath || !fsltx.exists)
+	{
+		Log("-fsltx option contains wrong file path: `", fsltx, "`");
+		return 1;
+	}
+	Log("fsltx : `", fsltx, "`");
+
+	import std.typecons : scoped;
+	import xrayed.xrcore : XrCore;
+    auto core = scoped!XrCore("OpenXRay", /*commandLine*/"");
 	// scope (exit) 
 	//	Core._destroy();
 
@@ -102,14 +129,7 @@ else version(linux)
 
 		try
 		{
-			import std.algorithm : joiner;
-			import std.range : chain;
-			import std.utf : byChar;
-			import std.array : array;
-			import std.string : toStringz;
-
-			auto commandLine = args.chain(["\0"]).joiner.byChar.array;
-			return entry_point(cast(char*) commandLine.toStringz);
+			return entry_point(args);
 		}
 		// catch (const std.overflow_error& e)
 		// {
@@ -170,9 +190,70 @@ int runApplication()
 			}
 		}
 	}
+	// Patching system elements
+//     *g_sLaunchOnExit_app = 0;
+//     *g_sLaunchOnExit_params = 0;
+
+//     InitSettings();
+//     // Adjust player & computer name for Asian
+//     if (pSettings->line_exist("string_table", "no_native_input"))
+//     {
+//         xr_strcpy(Core.UserName, sizeof(Core.UserName), "Player");
+//         xr_strcpy(Core.CompName, sizeof(Core.CompName), "Computer");
+//     }
+
+//     FPU::m24r();
+//     InitEngine();
+//     InitInput();
+//     InitConsole();
+//     Engine.External.CreateRendererList();
+
+//     if (CheckBenchmark())
+//         return 0;
+
+//     if (!GEnv.isDedicatedServer)
+//     {
+//         if (strstr(Core.Params, "-gl"))
+//             Console->Execute("renderer renderer_gl");
+//         else if (strstr(Core.Params, "-r4"))
+//             Console->Execute("renderer renderer_r4");
+//         else if (strstr(Core.Params, "-r3"))
+//             Console->Execute("renderer renderer_r3");
+//         else if (strstr(Core.Params, "-r2.5"))
+//             Console->Execute("renderer renderer_r2.5");
+//         else if (strstr(Core.Params, "-r2a"))
+//             Console->Execute("renderer renderer_r2a");
+//         else if (strstr(Core.Params, "-r2"))
+//             Console->Execute("renderer renderer_r2");
+//         else if (strstr(Core.Params, "-r1"))
+//             Console->Execute("renderer renderer_r1");
+//         else
+//         {
+//             CCC_LoadCFG_custom cmd("renderer ");
+//             cmd.Execute(Console->ConfigFile);
+//         }
+//     }
+//     else
+//         Console->Execute("renderer renderer_r1");
+
+//     Engine.External.Initialize();
+//     Startup();
+//     // check for need to execute something external
+//     if (/*xr_strlen(g_sLaunchOnExit_params) && */ xr_strlen(g_sLaunchOnExit_app))
+//     {
+// #if defined(WINDOWS)
+//         // CreateProcess need to return results to next two structures
+//         STARTUPINFO si = {};
+//         si.cb = sizeof(si);
+//         PROCESS_INFORMATION pi = {};
+//         // We use CreateProcess to setup working folder
+//         pcstr tempDir = xr_strlen(g_sLaunchWorkingFolder) ? g_sLaunchWorkingFolder : nullptr;
+//         CreateProcess(g_sLaunchOnExit_app, g_sLaunchOnExit_params, nullptr, nullptr, FALSE, 0, nullptr, tempDir, &si, &pi);
+// #endif
+//     }
 
 	import core.thread : Thread;
 	import std.datetime : dur;
-	Thread.sleep(dur!"seconds"(3));
-	return 0;
+	Thread.sleep(dur!"seconds"(1));
+    return 0;
 }
