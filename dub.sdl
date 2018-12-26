@@ -1,0 +1,12 @@
+name "xrayed"
+description "to be done"
+authors "drug007"
+copyright "Copyright unknown, see License"
+license "Unfortunately Unknown"
+name        "xr_3da"
+targetType  "executable"
+targetPath  "bin"
+
+dependency "bindbc-sdl" version="~>0.6.1"
+
+versions "SDL_205"

@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+xrayed.so
+xrayed.dylib
+xrayed.dll
+xrayed.a
+xrayed.lib
+xrayed-test-*
+*.exe
+*.o
+*.obj
+*.lst
+/core
