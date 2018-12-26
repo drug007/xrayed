@@ -9,4 +9,6 @@ targetPath  "bin"
 
 dependency "bindbc-sdl" version="~>0.6.1"
 
-versions "SDL_205"
+versions "SDL_205" "no_multi_instances"
+
+lflags "-llockfile"

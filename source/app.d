@@ -137,8 +137,40 @@ else version(linux)
 	}
 }
 
+version(linux)
+{
+	// small binding to lockfile library
+	extern(C) int lockfile_create(const char *lockfile, int retries, int flags);
+	enum L_PID = 16;
+}
+
 int runApplication()
 {
+	//<CM> R_ASSERT2(Core.Params, "Core must be initialized");
+
+	version(no_multi_instances)
+	{
+		if (!GEnv.isDedicatedServer)
+		{
+			version(windows)
+			{
+				CreateMutex(nullptr, TRUE, "Local\\STALKER-COP");
+				if (GetLastError() == ERROR_ALREADY_EXISTS)
+					return 2;
+			}
+			else version (linux)
+			{
+				int lock_res = lockfile_create("/var/lock/stalker-cop.lock", 0, L_PID);
+				if(lock_res)
+				{
+					Log("Couldn't lock file. Another instance is running?");
+					return 2;
+				}
+				Log("Lock file successfully");	
+			}
+		}
+	}
+
 	import core.thread : Thread;
 	import std.datetime : dur;
 	Thread.sleep(dur!"seconds"(3));
