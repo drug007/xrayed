@@ -16,6 +16,7 @@ int entry_point(string[] args)
 	bool dedicated;
 	string fsltx;
 
+	auto args_copy = args.dup;
 	auto helpInformation = getopt(
 		args,
 		"nosplash",    &nosplash,
@@ -65,8 +66,8 @@ int entry_point(string[] args)
 	Log("fsltx : `", fsltx, "`");
 
 	import std.typecons : scoped;
-	import xrayed.xrcore : XrCore;
-    auto core = scoped!XrCore("OpenXRay", args, fsltx);
+	import xrayed.xrcore.xrcore : XrCore;
+    auto core = scoped!XrCore("OpenXRay", args_copy, fsltx);
 	// scope (exit) 
 	//	Core._destroy();
 
@@ -126,6 +127,13 @@ else version(linux)
 			}
 		}
 		Log("SDL version: ", loadedSDLVersion);
+
+
+		if (!SDL_HasSSE())
+		{
+			Log("Host do not have SSE. Aborted.");
+			return 1;
+		}
 
 		try
 		{
